@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TCT Lot Checker (4 pts + Findings)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg-main: #eef1f6;
+      --bg-panel: #ffffff;
+      --border-soft: #d0d4dd;
+      --accent: #1565c0;
+      --accent-soft: #e3f2fd;
+      --text-main: #222;
+      --text-muted: #666;
+      --danger: #e53935;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+    }
+
+    header {
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 16px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    header p {
+      margin: 2px 0 0;
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+
+    .app {
+      max-width: 100%;
+      margin: 10px 0 16px 0;
+      padding: 0 8px;
+    }
+
+    .layout {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .left-panel {
+      flex: 0 0 360px;
+      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .right-panel {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border-radius: var(--radius);
+      border: 1px solid var(--border-soft);
+      padding: 8px 10px;
+    }
+
+    .panel h2 {
+      margin: 0 0 4px 0;
+      font-size: 0.9rem;
+      color: var(--accent);
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 4px 6px;
+      font-size: 0.85rem;
+      border-radius: 5px;
+      border: 1px solid var(--border-soft);
+      background: #f9fafb;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-soft);
+      background: #ffffff;
+    }
+
+    select.quad-ns,
+    select.quad-ew {
+      width: 90px;
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .form-field {
+      flex: 1 1 120px;
+      min-width: 0;
+    }
+
+    .form-field.small {
+      flex: 0 0 80px;
+      max-width: 100px;
+    }
+
+    .note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border-soft);
+      padding: 3px 4px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    th {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .btn {
+      padding: 5px 10px;
+      font-size: 0.8rem;
+      border-radius: 5px;
+      border: 1px solid #b0b4c0;
+      background: #f3f4f6;
+      cursor: pointer;
+      margin-right: 4px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      border-color: var(--danger);
+      color: #fff;
+    }
+
+    .btn-small {
+      padding: 3px 7px;
+      font-size: 0.75rem;
+    }
+
+    .btn:hover {
+      filter: brightness(1.05);
+    }
+
+    .delete-btn {
+      background: transparent;
+      border: none;
+      color: var(--danger);
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 0 4px;
+    }
+
+    .delete-btn:hover {
+      transform: scale(1.1);
+    }
+
+    #lotCanvas {
+      width: 100%;
+      max-width: none;
+      display: block;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+      background: #ffffff;
+    }
+
+    .result-box {
+      font-size: 0.8rem;
+    }
+
+    .line-ok {
+      background: #e8f5e9;
+    }
+
+    .line-bad {
+      background: #ffebee;
+    }
+
+    .line-projected {
+      background: #fff3e0;
+      font-style: italic;
+    }
+
+    .line-tie {
+      background: #eeeeee;
+      font-style: italic;
+    }
+
+    input.line-no,
+    input.from-point,
+    input.to-point {
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .left-panel {
+        flex: 1 1 100%;
+      }
+      .right-panel {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+
+  <!-- jsPDF + html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>TCT Lot Checker</h1>
+  <p>Bearings &amp; distances → coordinates, area, closure &amp; plot</p>
+</header>
+
+<div class="app">
+  <div class="layout">
+
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+
+      <!-- TCT GENERAL INFO -->
+      <div class="panel">
+        <h2>TCT General Info</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Owner / Name</label>
+            <input type="text" id="tctOwner">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>TCT No.</label>
+            <input type="text" id="tctNo">
+          </div>
+          <div class="form-field">
+            <label>Location</label>
+            <input type="text" id="tctLocation">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Total / TCT Area (m²)</label>
+            <input type="number" id="inputArea" step="0.001">
+          </div>
+        </div>
+        <p class="note">
+          Area is used to compare against computed polygon area.
+        </p>
+      </div>
+
+      <!-- TIE TO CORNER 1 -->
+      <div class="panel">
+        <h2>"TO CORNER 1" (optional)</h2>
+        <label>
+          <input type="checkbox" id="useTieToCorner1">
+          Include TO CORNER 1 tie line (plotted and listed, not used in area)
+        </label>
+        <div class="form-row">
+          <div class="form-field small">
+            <label>N/S</label>
+            <select id="tieNS" class="tie-input">
+              <option value="N">N</option>
+              <option value="S" selected>S</option>
+            </select>
+          </div>
+          <div class="form-field small">
+            <label>°</label>
+            <input type="number" id="tieDeg" class="tie-input" value="11" min="0" max="90">
+          </div>
+          <div class="form-field small">
+            <label>'</label>
+            <input type="number" id="tieMin" class="tie-input" value="42" min="0" max="59">
+          </div>
+          <div class="form-field small">
+            <label>"</label>
+            <input type="number" id="tieSec" class="tie-input" value="0" min="0" max="59">
+          </div>
+          <div class="form-field small">
+            <label>E/W</label>
+            <select id="tieEW" class="tie-input">
+              <option value="E">E</option>
+              <option value="W" selected>W</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Distance (m)</label>
+            <input type="number" id="tieDist" class="tie-input" value="704.64" step="0.01">
+          </div>
+        </div>
+        <p class="note">Sample: S 11° 42′ 00″ W, 704.64 m (not used unless checked).</p>
+      </div>
+
+      <!-- LOT LINES -->
+      <div class="panel">
+        <h2>Bearings &amp; Distances (Lot Lines)</h2>
+        <div style="margin-bottom: 4px;">
+          <button class="btn btn-small" type="button" onclick="addLineRow()">Add line</button>
+          <button class="btn btn-small" type="button" onclick="insertLineRowAbove()">Insert above</button>
+          <button class="btn btn-small" type="button" onclick="insertLineRowBelow()">Insert below</button>
+          <button class="btn btn-small" type="button" onclick="renumberLines()">Renumber</button>
+          <button class="btn btn-small btn-danger" type="button" onclick="clearLines()">Clear</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+            <tr>
+              <th>#</th>
+              <th>From</th>
+              <th>To</th>
+              <th>N/S</th>
+              <th>°</th>
+              <th>'</th>
+              <th>"</th>
+              <th>E/W</th>
+              <th>D (m)</th>
+              <th>x</th>
+            </tr>
+            </thead>
+            <tbody id="lines-body"></tbody>
+          </table>
+        </div>
+        <p class="note">
+          # = line. From–To = nodes (1-2, 2-3, …).  
+          Use quadrantal bearing or choose Due N / E / S / W (DMS auto-disable).
+        </p>
+
+        <!-- Missing / Projected Line Bearings -->
+        <div style="margin-top:6px; border-top:1px solid var(--border-soft); padding-top:4px;">
+          <strong style="font-size:0.8rem;">Closing Line (Last → 1)</strong>
+          <div class="note" id="missingLineBearingText">Missing line: —</div>
+          <label style="font-size:0.75rem;">
+            <input type="checkbox" id="useMissingLine" onclick="toggleClosingChoice('missing')">
+            Use Missing Line Bearing to add closing line
+          </label>
+          <div class="note" id="projectedLineBearingText" style="margin-top:2px;">Projected closure: —</div>
+          <label style="font-size:0.75rem;">
+            <input type="checkbox" id="useProjectedLine" onclick="toggleClosingChoice('projected')">
+            Use Projected Line Bearing to add closing line
+          </label>
+          <p class="note">
+            When checked, a new line (last → 1) is added in the table with that bearing &amp; distance, then the plot recomputes.
+          </p>
+        </div>
+      </div>
+
+      <!-- COMPUTE / EXPORT -->
+      <div class="panel">
+        <h2>Compute / Export</h2>
+
+        <label style="margin-top:4px;">
+          <input type="checkbox" id="showMissingLine" checked>
+          Show projected / missing closing line (dashed)
+        </label>
+
+        <div style="margin-top:4px;">
+          <label style="font-size:0.75rem; display:block;">
+            <input type="checkbox" id="showLengthLabels" checked>
+            Show length labels on top of each line
+          </label>
+          <label style="font-size:0.75rem; display:block; margin-top:2px;">
+            <input type="checkbox" id="showBearingLabels" checked>
+            Show bearing labels below each line
+          </label>
+        </div>
+
+        <div style="margin-top:4px;">
+          <label style="font-size:0.75rem; display:block;">
+            <input type="checkbox" id="alignLabelsToLine" checked>
+            Align labels to line angle (keep upright)
+          </label>
+        </div>
+
+        <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">
+          <button class="btn btn-primary" type="button" onclick="computeCoordinates()">
+            Compute &amp; Plot
+          </button>
+          <button class="btn" type="button" onclick="saveAsPDF()">
+            Save as PDF (same layout)
+          </button>
+        </div>
+
+        <p class="note">Plot auto-updates when you change values. Compute button is a manual refresh.</p>
+        <div id="projInfo" class="note" style="margin-top:6px;">
+          Projected / missing line info will appear here.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+
+      <div class="panel">
+        <h2>Lot Plot</h2>
+        <canvas id="lotCanvas" width="1400" height="700"></canvas>
+        <p class="note">Easting → X axis, Northing → Y axis (N upwards). Plot is centered; scale adjusts to fit.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Line Distance Check</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+            <tr>
+              <th>#</th>
+              <th>From</th>
+              <th>To</th>
+              <th>From (E / N)</th>
+              <th>To (E / N)</th>
+              <th>Bearing (typed / projected)</th>
+              <th>D input (m)</th>
+              <th>D from coords (m)</th>
+              <th>Diff (m)</th>
+            </tr>
+            </thead>
+            <tbody id="line-check-body"></tbody>
+          </table>
+        </div>
+        <p class="note">
+          Green = OK, Red = conflict, Grey = TO CORNER 1 tie, Orange = projected/missing closing line.
+        </p>
+      </div>
+
+      <div class="panel">
+        <h2>Area &amp; Closure</h2>
+        <div id="resultsContainer" style="display:flex; gap:8px; align-items:flex-start;">
+          <div id="results" class="result-box" style="flex:1 1 55%;">
+            No computation yet.
+          </div>
+          <div id="findings" class="result-box" style="flex:1 1 45%; border-left:1px solid var(--border-soft); padding-left:8px; font-size:0.8rem; color:var(--text-muted);">
+            <em>Findings summary will appear here.</em>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const defaultLines = [
+    { lineNo: 1, from: "1", to: "2", ns: "N", deg: 0,  min: 0, sec: 0, ew: "E", dist: 50 },
+    { lineNo: 2, from: "2", to: "3", ns: "N", deg: 90, min: 0, sec: 0, ew: "E", dist: 30 },
+    { lineNo: 3, from: "3", to: "4", ns: "S", deg: 0,  min: 0, sec: 0, ew: "E", dist: 50 },
+    { lineNo: 4, from: "4", to: "1", ns: "S", deg: 90, min: 0, sec: 0, ew: "W", dist: 30 }
+  ];
+
+  let tctState = null;
+  let closingInfo = null;
+  let autoComputeTimer = null;
+  let selectedLineRow = null;
+
+  function parseNumber(v){const n=parseFloat(v);return isNaN(n)?0:n;}
+  function dmsToDecimal(deg,min,sec){return deg+(min/60)+(sec/3600);}
+
+  function deltaToBearing(dN,dE){
+    const eps=1e-9;
+    if(Math.abs(dN)<eps&&Math.abs(dE)<eps)return"Closed (no bearing)";
+    const ns=dN>=0?"N":"S";
+    const ew=dE>=0?"E":"W";
+    const absN=Math.abs(dN),absE=Math.abs(dE);
+    let thetaDeg;
+    if(absN<eps)thetaDeg=90;
+    else thetaDeg=Math.atan(absE/absN)*180/Math.PI;
+    let deg=Math.floor(thetaDeg);
+    let minFloat=(thetaDeg-deg)*60;
+    let min=Math.floor(minFloat);
+    let sec=(minFloat-min)*60;
+    sec=Math.round(sec*100)/100;
+    return`${ns} ${deg}° ${min}' ${sec.toFixed(2)}" ${ew}`;
+  }
+
+  function bearingComponentsFromDelta(dN,dE){
+    const eps=1e-9;
+    if(Math.abs(dN)<eps&&Math.abs(dE)<eps)return null;
+    const ns=dN>=0?"N":"S";
+    const ew=dE>=0?"E":"W";
+    const absN=Math.abs(dN),absE=Math.abs(dE);
+    let thetaDeg;
+    if(Math.abs(absN)<eps)thetaDeg=90;
+    else thetaDeg=Math.atan(absE/absN)*180/Math.PI;
+    let deg=Math.floor(thetaDeg);
+    let minFloat=(thetaDeg-deg)*60;
+    let min=Math.floor(minFloat);
+    let sec=(minFloat-min)*60;
+    sec=Math.round(sec*100)/100;
+    return{ns,ew,deg,min,sec};
+  }
+
+  function bearingFromSeg(seg){
+    if(seg.ns==="DUE_N")return"Due North (0° 00' 00\")";
+    if(seg.ns==="DUE_S")return"Due South (0° 00' 00\")";
+    if(seg.ew==="DUE_E")return"Due East (90° 00' 00\")";
+    if(seg.ew==="DUE_W")return"Due West (90° 00' 00\")";
+    return`${seg.ns} ${seg.deg}° ${seg.min}' ${seg.sec}" ${seg.ew}`;
+  }
+
+  function updateBearingControls(row){
+    const nsSel=row.querySelector(".quad-ns");
+    const ewSel=row.querySelector(".quad-ew");
+    const deg=row.querySelector(".deg");
+    const min=row.querySelector(".min");
+    const sec=row.querySelector(".sec");
+    if(!nsSel||!ewSel||!deg||!min||!sec)return;
+    nsSel.disabled=false;ewSel.disabled=false;deg.disabled=false;min.disabled=false;sec.disabled=false;
+    const nsVal=nsSel.value,ewVal=ewSel.value;
+    if(nsVal==="DUE_N"||nsVal==="DUE_S"){
+      ewSel.disabled=true;deg.value="";min.value="";sec.value="";
+      deg.disabled=true;min.disabled=true;sec.disabled=true;
+    }else if(ewVal==="DUE_E"||ewVal==="DUE_W"){
+      nsSel.disabled=true;deg.value="";min.value="";sec.value="";
+      deg.disabled=true;min.disabled=true;sec.disabled=true;
+    }
+  }
+
+  function attachBearingListeners(row){
+    const nsSel=row.querySelector(".quad-ns");
+    const ewSel=row.querySelector(".quad-ew");
+    if(nsSel)nsSel.addEventListener("change",()=>{updateBearingControls(row);scheduleAutoCompute();});
+    if(ewSel)ewSel.addEventListener("change",()=>{updateBearingControls(row);scheduleAutoCompute();});
+    updateBearingControls(row);
+  }
+
+  function scheduleAutoCompute(){
+    if(autoComputeTimer)clearTimeout(autoComputeTimer);
+    autoComputeTimer=setTimeout(()=>{computeCoordinates();},200);
+  }
+
+  function attachRowSelection(row){
+    row.querySelectorAll("input,select").forEach(c=>{
+      c.addEventListener("focus",()=>{selectedLineRow=row;});
+    });
+  }
+
+  function clearLineRow(row){
+    row.querySelectorAll("input").forEach(inp=>{
+      if(inp.classList.contains("line-no")||
+         inp.classList.contains("from-point")||
+         inp.classList.contains("to-point"))return;
+      inp.value="";
+    });
+    row.querySelectorAll("select").forEach(sel=>{
+      if(sel.classList.contains("quad-ns"))sel.value="N";
+      if(sel.classList.contains("quad-ew"))sel.value="E";
+    });
+    updateBearingControls(row);
+  }
+
+  function addLineRow(data,insertBeforeRow){
+    const tbody=document.getElementById("lines-body");
+    const existing=tbody.querySelectorAll("tr").length;
+    const lineNo=data&&data.lineNo?data.lineNo:existing+1;
+    const fromDefault=data&&data.from?data.from:(existing===0?"1":(existing+1).toString());
+    const toDefault=data&&data.to?data.to:(existing+2).toString();
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td><input type="number" class="line-no" value="${lineNo}" style="width:40px;"></td>
+      <td><input type="text" class="from-point" value="${fromDefault}" style="width:50px;"></td>
+      <td><input type="text" class="to-point" value="${toDefault}" style="width:50px;"></td>
+      <td>
+        <select class="quad-ns">
+          <option value="N">N</option>
+          <option value="S">S</option>
+          <option value="DUE_N">Due N</option>
+          <option value="DUE_S">Due S</option>
+        </select>
+      </td>
+      <td><input type="number" class="deg" min="0" max="90" style="width:50px;"></td>
+      <td><input type="number" class="min" min="0" max="59" style="width:50px;"></td>
+      <td><input type="number" class="sec" min="0" max="59" style="width:50px;"></td>
+      <td>
+        <select class="quad-ew">
+          <option value="E">E</option>
+          <option value="W">W</option>
+          <option value="DUE_E">Due E</option>
+          <option value="DUE_W">Due W</option>
+        </select>
+      </td>
+      <td><input type="number" class="distance" step="0.001" style="width:70px;"></td>
+      <td><button class="delete-btn" type="button" onclick="deleteLineRow(this)" title="Clear on first click, delete on second">x</button></td>
+    `;
+    if(insertBeforeRow)tbody.insertBefore(tr,insertBeforeRow);else tbody.appendChild(tr);
+
+    if(data){
+      const nsSel=tr.querySelector(".quad-ns");
+      const ewSel=tr.querySelector(".quad-ew");
+      const degInput=tr.querySelector(".deg");
+      const minInput=tr.querySelector(".min");
+      const secInput=tr.querySelector(".sec");
+      const distInput=tr.querySelector(".distance");
+      if(data.ns)nsSel.value=data.ns;
+      if(data.ew)ewSel.value=data.ew;
+      if(typeof data.deg!=="undefined")degInput.value=data.deg;
+      if(typeof data.min!=="undefined")minInput.value=data.min;
+      if(typeof data.sec!=="undefined")secInput.value=data.sec;
+      if(typeof data.dist!=="undefined")distInput.value=data.dist;
+    }
+
+    attachBearingListeners(tr);
+    attachRowSelection(tr);
+    tr.querySelectorAll("input,select").forEach(c=>{
+      c.addEventListener("input",scheduleAutoCompute);
+      c.addEventListener("change",scheduleAutoCompute);
+    });
+    return tr;
+  }
+
+  function deleteLineRow(btn){
+    const row=btn.closest("tr");if(!row)return;
+    const already=row.getAttribute("data-cleared")==="1";
+    if(!already){
+      clearLineRow(row);
+      row.setAttribute("data-cleared","1");
+      btn.title="Click again to remove row";
+    }else{
+      if(selectedLineRow===row)selectedLineRow=null;
+      row.remove();
+    }
+    scheduleAutoCompute();
+  }
+
+  function clearLines(){
+    document.getElementById("lines-body").innerHTML="";
+    document.getElementById("line-check-body").innerHTML="";
+    document.getElementById("results").innerHTML="No computation yet.";
+    document.getElementById("projInfo").innerText="Projected / missing line info will appear here.";
+    const ml=document.getElementById("missingLineBearingText");
+    const pl=document.getElementById("projectedLineBearingText");
+    if(ml)ml.textContent="Missing line: —";
+    if(pl)pl.textContent="Projected closure: —";
+    document.getElementById("useMissingLine").checked=false;
+    document.getElementById("useProjectedLine").checked=false;
+    const findingsDiv=document.getElementById("findings");
+    if(findingsDiv)findingsDiv.innerHTML="<em>Findings summary will appear here.</em>";
+    clearCanvas();
+    selectedLineRow=null;
+    tctState=null;
+    closingInfo=null;
+  }
+
+  function insertLineRowAbove(){
+    const tbody=document.getElementById("lines-body");
+    const rows=tbody.querySelectorAll("tr");
+    if(!rows.length){addLineRow();scheduleAutoCompute();return;}
+    let target=selectedLineRow;
+    if(!target||!tbody.contains(target))target=rows[rows.length-1];
+    addLineRow(null,target);
+    renumberLines();
+    scheduleAutoCompute();
+  }
+
+  function insertLineRowBelow(){
+    const tbody=document.getElementById("lines-body");
+    const rows=tbody.querySelectorAll("tr");
+    if(!rows.length){addLineRow();scheduleAutoCompute();return;}
+    let target=selectedLineRow;
+    if(!target||!tbody.contains(target))target=rows[rows.length-1];
+    const next=target.nextSibling;
+    addLineRow(null,next||null);
+    renumberLines();
+    scheduleAutoCompute();
+  }
+
+  function renumberLines(){
+    const tbody=document.getElementById("lines-body");
+    const rows=tbody.querySelectorAll("tr");
+    rows.forEach((row,idx)=>{
+      const line=row.querySelector(".line-no");
+      const from=row.querySelector(".from-point");
+      const to=row.querySelector(".to-point");
+      const num=idx+1;
+      if(line)line.value=num;
+      if(from)from.value=num.toString();
+      if(to)to.value=(num+1).toString();
+    });
+  }
+
+  function clearCanvas(){
+    const canvas=document.getElementById("lotCanvas");
+    const ctx=canvas.getContext("2d");
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+
+  function drawLot(coords,info){
+    const canvas=document.getElementById("lotCanvas");
+    const ctx=canvas.getContext("2d");
+    const paddingX=40,paddingY=40;
+    info=info||{};
+    const showMissing=info.showMissing!==false;
+    const showLengths=info.showLengths!==false;
+    const showBearings=info.showBearings!==false;
+    const alignLabels=info.alignLabelsToLine===true;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    const frameWidth=canvas.width-2*paddingX;
+    const frameHeight=canvas.height-2*paddingY;
+
+    // GRIDLINES (behind everything)
+    const gridSpacing=40;
+    ctx.save();
+    ctx.strokeStyle="#edf0f7";
+    ctx.lineWidth=0.7;
+    ctx.beginPath();
+    for(let x=paddingX;x<=canvas.width-paddingX;x+=gridSpacing){
+      ctx.moveTo(x,paddingY);
+      ctx.lineTo(x,canvas.height-paddingY);
+    }
+    for(let y=paddingY;y<=canvas.height-paddingY;y+=gridSpacing){
+      ctx.moveTo(paddingX,y);
+      ctx.lineTo(canvas.width-paddingX,y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Frame
+    ctx.strokeStyle="#d0d4dd";
+    ctx.lineWidth=1;
+    ctx.strokeRect(paddingX,paddingY,frameWidth,frameHeight);
+
+    // Center axes (X–Y) with N/E/S/W labels
+    const canvasCenterX=paddingX+frameWidth/2;
+    const canvasCenterY=paddingY+frameHeight/2;
+    ctx.save();
+    ctx.strokeStyle="#999999";
+    ctx.lineWidth=1.2;
+    ctx.setLineDash([4,3]);
+    ctx.beginPath();
+    // vertical (N–S)
+    ctx.moveTo(canvasCenterX,paddingY);
+    ctx.lineTo(canvasCenterX,canvas.height-paddingY);
+    // horizontal (W–E)
+    ctx.moveTo(paddingX,canvasCenterY);
+    ctx.lineTo(canvas.width-paddingX,canvasCenterY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.font="11px Arial";
+    ctx.fillStyle="#444";
+    ctx.textAlign="center";
+    ctx.textBaseline="bottom";
+    // N at top
+    ctx.fillText("N",canvasCenterX,paddingY-4);
+    // S at bottom
+    ctx.textBaseline="top";
+    ctx.fillText("S",canvasCenterX,canvas.height-paddingY+4);
+    // E at right
+    ctx.textBaseline="middle";
+    ctx.textAlign="left";
+    ctx.fillText("E",canvas.width-paddingX+4,canvasCenterY);
+    // W at left
+    ctx.textAlign="right";
+    ctx.fillText("W",paddingX-4,canvasCenterY);
+    ctx.restore();
+
+    if(!coords||coords.length<2){
+      ctx.font="12px Arial";
+      ctx.fillStyle="#999";
+      ctx.fillText("No sufficient points to plot.",paddingX+10,paddingY+20);
+      return;
+    }
+
+    let minE=coords[0].e,maxE=coords[0].e,minN=coords[0].n,maxN=coords[0].n;
+    coords.forEach(c=>{
+      if(c.e<minE)minE=c.e;
+      if(c.e>maxE)maxE=c.e;
+      if(c.n<minN)minN=c.n;
+      if(c.n>maxN)maxN=c.n;
+    });
+
+    let widthW=maxE-minE,heightW=maxN-minN;
+    if(widthW===0)widthW=1;
+    if(heightW===0)heightW=1;
+    const scaleX=frameWidth/widthW;
+    const scaleY=frameHeight/heightW;
+    const scale=Math.min(scaleX,scaleY);
+    const centerE=(minE+maxE)/2;
+    const centerN=(minN+maxN)/2;
+
+    function worldToCanvas(E,N){
+      const x=canvasCenterX+(E-centerE)*scale;
+      const y=canvasCenterY-(N-centerN)*scale;
+      return{x,y};
+    }
+
+    // Lot boundary polyline
+    ctx.strokeStyle="#1565c0";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    for(let i=0;i<coords.length;i++){
+      const p=worldToCanvas(coords[i].e,coords[i].n);
+      if(i===0)ctx.moveTo(p.x,p.y);else ctx.lineTo(p.x,p.y);
+    }
+    ctx.stroke();
+
+    // Fill polygon (green if closed)
+    let fillColor="rgba(21,101,192,0.07)";
+    if(info&&typeof info.closureDist==="number"&&info.closureDist<=0.01){
+      fillColor="rgba(76,175,80,0.18)";
+    }
+    ctx.fillStyle=fillColor;
+    ctx.beginPath();
+    for(let i=0;i<coords.length;i++){
+      const p=worldToCanvas(coords[i].e,coords[i].n);
+      if(i===0)ctx.moveTo(p.x,p.y);else ctx.lineTo(p.x,p.y);
+    }
+    const firstP=worldToCanvas(coords[0].e,coords[0].n);
+    ctx.lineTo(firstP.x,firstP.y);
+    ctx.closePath();
+    ctx.fill();
+
+    // Missing / projected line
+    if(showMissing&&info.closureDist!==undefined&&info.first&&info.last&&info.closureDist>0.01){
+      const first=worldToCanvas(info.first.e,info.first.n);
+      const last=worldToCanvas(info.last.e,info.last.n);
+      const color=info.hasMissing?"#e53935":"#666666";
+      ctx.save();
+      ctx.setLineDash([8,5]);
+      ctx.strokeStyle=color;
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(last.x,last.y);
+      ctx.lineTo(first.x,first.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Tie line
+    if(info.tie){
+      const t=info.tie;
+      const pref=worldToCanvas(t.ref.e,t.ref.n);
+      const p1=worldToCanvas(t.corner1.e,t.corner1.n);
+      ctx.save();
+      ctx.setLineDash([4,4]);
+      ctx.strokeStyle="#777";
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(pref.x,pref.y);
+      ctx.lineTo(p1.x,p1.y);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.arc(pref.x,pref.y,3,0,Math.PI*2);
+      ctx.fillStyle="#fff";ctx.fill();
+      ctx.strokeStyle="#555";ctx.stroke();
+      ctx.font="10px Arial";
+      ctx.fillStyle="#555";
+      ctx.textAlign="right";
+      ctx.textBaseline="top";
+      ctx.fillText("Ref",pref.x-4,pref.y+4);
+    }
+
+    // Corner points
+    ctx.font="11px Arial";
+    coords.forEach(c=>{
+      const p=worldToCanvas(c.e,c.n);
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,3.5,0,Math.PI*2);
+      ctx.fillStyle="#fff";ctx.fill();
+      ctx.strokeStyle="#000";ctx.stroke();
+      ctx.fillStyle="#000";
+      ctx.textAlign="left";
+      ctx.textBaseline="bottom";
+      ctx.fillText(c.pt,p.x+5,p.y-3);
+    });
+
+    // Line labels (transparent background)
+    ctx.font="10px Arial";
+    for(let i=0;i<coords.length-1;i++){
+      const ci=coords[i],cj=coords[i+1];
+      const pi=worldToCanvas(ci.e,ci.n);
+      const pj=worldToCanvas(cj.e,cj.n);
+      const midX=(pi.x+pj.x)/2,midY=(pi.y+pj.y)/2;
+      const dist=Math.hypot(cj.e-ci.e,cj.n-ci.n);
+      const distLabel=dist.toFixed(2)+" m";
+      const dN=cj.n-ci.n,dE=cj.e-ci.e;
+      const bearingLabel=deltaToBearing(dN,dE);
+      const dx=pj.x-pi.x,dy=pj.y-pi.y;
+      const segLenCanvas=Math.hypot(dx,dy)||1;
+      const nx=-dy/segLenCanvas,ny=dx/segLenCanvas,offset=12;
+      const topX=midX+nx*offset,topY=midY+ny*offset;
+      const bottomX=midX-nx*offset,bottomY=midY-ny*offset;
+      let angle=Math.atan2(dy,dx);
+      if(alignLabels){
+        if(angle>Math.PI/2)angle-=Math.PI;
+        else if(angle<-Math.PI/2)angle+=Math.PI;
+      }
+
+      if(showLengths){
+        ctx.save();
+        ctx.translate(topX,topY);
+        if(alignLabels)ctx.rotate(angle);
+        ctx.textAlign="center";
+        ctx.textBaseline="middle";
+        ctx.fillStyle="#000";
+        ctx.fillText(distLabel,0,0);
+        ctx.restore();
+      }
+      if(showBearings){
+        ctx.save();
+        ctx.translate(bottomX,bottomY);
+        if(alignLabels)ctx.rotate(angle);
+        ctx.textAlign="center";
+        ctx.textBaseline="middle";
+        ctx.fillStyle="#000";
+        ctx.fillText(bearingLabel,0,0);
+        ctx.restore();
+      }
+    }
+  }
+
+  function computeCoordinates(){
+    const rows=document.querySelectorAll("#lines-body tr");
+    const coords=[];const segments=[];
+    let perimeter=0;let hasMissingLine=false;
+    closingInfo=null;
+    let startE=0,startN=0;
+    const startName="1";
+    coords.push({pt:startName,e:startE,n:startN});
+
+    rows.forEach(row=>{
+      const distVal=row.querySelector(".distance").value;
+      const dist=parseNumber(distVal);
+      const nsRaw=row.querySelector(".quad-ns").value||"N";
+      const ewRaw=row.querySelector(".quad-ew").value||"E";
+      const degVal=row.querySelector(".deg").value;
+      const minVal=row.querySelector(".min").value;
+      const secVal=row.querySelector(".sec").value;
+      const fromInput=(row.querySelector(".from-point").value||"").trim();
+      const toInput=(row.querySelector(".to-point").value||"").trim();
+      const lineNoInput=row.querySelector(".line-no").value;
+      const anyBearingData=degVal||minVal||secVal||nsRaw!=="N"||ewRaw!=="E";
+      const anyNameData=fromInput||toInput;
+
+      if(!dist||dist<=0){
+        if(anyBearingData||anyNameData)hasMissingLine=true;
+        return;
+      }
+
+      const deg=parseNumber(degVal),min=parseNumber(minVal),sec=parseNumber(secVal);
+      const fromIndex=coords.length-1;
+      const currentPt=coords[fromIndex];
+      const fromName=fromInput||currentPt.pt;
+      const toName=toInput||(coords.length+1).toString();
+      const lineNo=lineNoInput||(segments.length+1);
+      let dN,dE;
+      const bearingDeg=dmsToDecimal(deg,min,sec);
+
+      if(nsRaw==="DUE_N"){dN=dist;dE=0;}
+      else if(nsRaw==="DUE_S"){dN=-dist;dE=0;}
+      else if(ewRaw==="DUE_E"){dN=0;dE=dist;}
+      else if(ewRaw==="DUE_W"){dN=0;dE=-dist;}
+      else{
+        const thetaRad=bearingDeg*Math.PI/180;
+        dN=dist*Math.cos(thetaRad);
+        dE=dist*Math.sin(thetaRad);
+        if(nsRaw==="S")dN*=-1;
+        if(ewRaw==="W")dE*=-1;
+      }
+
+      const newE=currentPt.e+dE;
+      const newN=currentPt.n+dN;
+      perimeter+=dist;
+      coords.push({pt:toName,e:newE,n:newN});
+      const toIndex=coords.length-1;
+      segments.push({lineNo,fromName,toName,ns:nsRaw,ew:ewRaw,deg,min,sec,dist,fromIndex,toIndex});
+    });
+
+    const resultsDiv=document.getElementById("results");
+    const lineCheckBody=document.getElementById("line-check-body");
+    const projInfoDiv=document.getElementById("projInfo");
+    const findingsDiv=document.getElementById("findings");
+    lineCheckBody.innerHTML="";
+
+    const mlText=document.getElementById("missingLineBearingText");
+    const plText=document.getElementById("projectedLineBearingText");
+
+    if(coords.length<2){
+      drawLot(coords);
+      resultsDiv.textContent="No lines defined yet.";
+      projInfoDiv.textContent="No projected line (not enough points).";
+      if(mlText)mlText.textContent="Missing line: —";
+      if(plText)plText.textContent="Projected closure: —";
+      if(findingsDiv)findingsDiv.innerHTML="<p><strong>Findings:</strong> No lines have sufficient data. Enter at least two lines to evaluate closure and area.</p>";
+      tctState=null;closingInfo=null;return;
+    }
+
+    const first=coords[0],last=coords[coords.length-1];
+    const dE_closure=last.e-first.e,dN_closure=last.n-first.n;
+    const closureDist=Math.hypot(dE_closure,dN_closure);
+    const closureBearingError=deltaToBearing(dN_closure,dE_closure);
+    const closureTol=0.01;
+
+    const closing_dN=first.n-last.n,closing_dE=first.e-last.e;
+    const closingBearingLine=deltaToBearing(closing_dN,closing_dE);
+    closingInfo={from:last.pt,to:first.pt,dN:closing_dN,dE:closing_dE,dist:closureDist,bearingText:closingBearingLine};
+
+    if(mlText&&plText){
+      if(closureDist<=closureTol){
+        mlText.textContent="Missing line: traverse already closes (no missing distance).";
+        plText.textContent="Projected closure: traverse already closes (no closure error).";
+      }else{
+        if(hasMissingLine){
+          mlText.textContent=`Missing line: ${last.pt} → ${first.pt}, ${closingBearingLine}, ${closureDist.toFixed(3)} m`;
+        }else{
+          mlText.textContent="Missing line: no row with missing distance detected.";
+        }
+        plText.textContent=`Projected closure: ${last.pt} → ${first.pt}, ${closingBearingLine}, ${closureDist.toFixed(3)} m`;
+      }
+    }
+
+    let tieObj=null;
+    const tieEnabled=document.getElementById("useTieToCorner1").checked;
+    if(tieEnabled&&coords.length>=1){
+      const tieNS=document.getElementById("tieNS").value;
+      const tieEW=document.getElementById("tieEW").value;
+      const tieDeg=parseNumber(document.getElementById("tieDeg").value);
+      const tieMin=parseNumber(document.getElementById("tieMin").value);
+      const tieSec=parseNumber(document.getElementById("tieSec").value);
+      const tieDist=parseNumber(document.getElementById("tieDist").value);
+      if(tieDist>0){
+        const tieBearingDeg=dmsToDecimal(tieDeg,tieMin,tieSec);
+        let tN,tE;
+        const thetaRad=tieBearingDeg*Math.PI/180;
+        tN=tieDist*Math.cos(thetaRad);
+        tE=tieDist*Math.sin(thetaRad);
+        if(tieNS==="S")tN*=-1;
+        if(tieEW==="W")tE*=-1;
+        const refE=first.e-tE,refN=first.n-tN;
+        tieObj={ref:{pt:"Ref",e:refE,n:refN},corner1:first,dist:tieDist,bearingText:`${tieNS} ${tieDeg}° ${tieMin}' ${tieSec}" ${tieEW}`};
+
+        const trTie=document.createElement("tr");
+        trTie.className="line-tie";
+        trTie.innerHTML=`<td>TO C1</td>
+          <td>Ref</td>
+          <td>1</td>
+          <td>E: ${tieObj.ref.e.toFixed(3)} / N: ${tieObj.ref.n.toFixed(3)}</td>
+          <td>E: ${tieObj.corner1.e.toFixed(3)} / N: ${tieObj.corner1.n.toFixed(3)}</td>
+          <td>${tieObj.bearingText}</td>
+          <td>${tieDist.toFixed(2)}</td>
+          <td>—</td>
+          <td>—</td>`;
+        lineCheckBody.appendChild(trTie);
+      }
+    }
+
+    segments.forEach(seg=>{
+      const cFrom=coords[seg.fromIndex];
+      const cTo=coords[seg.toIndex];
+      const dCoord=Math.hypot(cTo.e-cFrom.e,cTo.n-cFrom.n);
+      const diff=dCoord-seg.dist;
+      const absDiff=Math.abs(diff);
+      const tr=document.createElement("tr");
+      tr.className=absDiff>0.01?"line-bad":"line-ok";
+      const bearingText=bearingFromSeg(seg);
+      const fromCoordText=`E: ${cFrom.e.toFixed(3)} / N: ${cFrom.n.toFixed(3)}`;
+      const toCoordText=`E: ${cTo.e.toFixed(3)} / N: ${cTo.n.toFixed(3)}`;
+      tr.innerHTML=`
+        <td>${seg.lineNo}</td>
+        <td>${seg.fromName}</td>
+        <td>${seg.toName}</td>
+        <td>${fromCoordText}</td>
+        <td>${toCoordText}</td>
+        <td>${bearingText}</td>
+        <td>${seg.dist.toFixed(3)}</td>
+        <td>${dCoord.toFixed(3)}</td>
+        <td>${diff.toFixed(3)}</td>`;
+      lineCheckBody.appendChild(tr);
+    });
+
+    const showMissing=document.getElementById("showMissingLine").checked;
+    let projText="";
+    if(showMissing&&coords.length>=2&&closureDist>closureTol){
+      const proj_dN=first.n-last.n,proj_dE=first.e-last.e;
+      const projBearing=deltaToBearing(proj_dN,proj_dE);
+      const trProj=document.createElement("tr");
+      trProj.className="line-projected";
+      const label=hasMissingLine?"Miss":"Proj";
+      const fromCoordText=`E: ${last.e.toFixed(3)} / N: ${last.n.toFixed(3)}`;
+      const toCoordText=`E: ${first.e.toFixed(3)} / N: ${first.n.toFixed(3)}`;
+      trProj.innerHTML=`
+        <td>${label}</td>
+        <td>${last.pt}</td>
+        <td>${first.pt}</td>
+        <td>${fromCoordText}</td>
+        <td>${toCoordText}</td>
+        <td>${projBearing}</td>
+        <td>—</td>
+        <td>${closureDist.toFixed(3)}</td>
+        <td>—</td>`;
+      lineCheckBody.appendChild(trProj);
+
+      if(hasMissingLine){
+        projText=`Missing line (at least one row has no distance): <strong>${last.pt} → ${first.pt}</strong>, distance <strong>${closureDist.toFixed(3)} m</strong>, bearing <strong>${projBearing}</strong>.`;
+      }else{
+        projText=`Projected closing line (closure error only): <strong>${last.pt} → ${first.pt}</strong>, distance <strong>${closureDist.toFixed(3)} m</strong>, bearing <strong>${projBearing}</strong>.`;
+      }
+    }else if(!showMissing){
+      projText="Missing/projection display is disabled (checkbox unchecked).";
+    }else if(coords.length>=2){
+      projText=`No projected/missing line: traverse closes within ±${closureTol.toFixed(2)} m.`;
+    }else{
+      projText="Projected line not available (not enough points).";
+    }
+
+    const showLengths=document.getElementById("showLengthLabels").checked;
+    const showBearings=document.getElementById("showBearingLabels").checked;
+    const alignLabelsToLine=document.getElementById("alignLabelsToLine").checked;
+
+    drawLot(coords,{closureDist,first,last,tie:tieObj,showMissing,hasMissing:hasMissingLine,showLengths,showBearings,alignLabelsToLine});
+
+    let area2=0;
+    for(let i=0;i<coords.length;i++){
+      const j=(i+1)%coords.length;
+      area2+=coords[i].e*coords[j].n-coords[j].e*coords[i].n;
+    }
+    const area=Math.abs(area2)/2;
+    const inputArea=parseNumber(document.getElementById("inputArea").value);
+    let areaCompareText="No TCT / total area provided.";
+    let areaComparePlain=areaCompareText;
+    let areaStatus="",areaStatusPlain="",diffArea=0,pctDiff=0;
+
+    if(inputArea>0&&coords.length>=3){
+      diffArea=area-inputArea;
+      const absDiffArea=Math.abs(diffArea);
+      pctDiff=inputArea!==0?(absDiffArea/inputArea)*100:0;
+      areaComparePlain=`Input area: ${inputArea.toFixed(3)} m²; difference (computed − input): ${diffArea.toFixed(3)} m² (${pctDiff.toFixed(2)} %).`;
+      areaCompareText=areaComparePlain;
+      if(hasMissingLine){
+        areaStatusPlain="At least one line has no distance; the closing segment is inferred from geometry. Area is used only as an additional check.";
+      }else if(pctDiff<=0.5&&closureDist<=closureTol){
+        areaStatusPlain="Area & closure are within about 0.5% → data is consistent.";
+      }else if(closureDist>closureTol){
+        areaStatusPlain="Traverse does not close → check bearings/distances; there may be a wrong or missing line.";
+      }else{
+        areaStatusPlain="Area mismatch > 0.5% even if closed → check TCT area or field data (possible error or omitted segment).";
+      }
+      areaStatus=`<em>${areaStatusPlain}</em>`;
+    }else if(inputArea>0&&coords.length<3){
+      areaComparePlain="Not enough points to compute area vs TCT input.";
+      areaCompareText=areaComparePlain;
+    }
+
+    let precisionText;
+    if(closureDist<1e-6)precisionText="Polygon closes perfectly (no measurable error)";
+    else if(perimeter>0&&closureDist>0){
+      const precision=perimeter/closureDist;
+      precisionText=`≈ 1 : ${precision.toFixed(0)}`;
+    }else precisionText="N/A";
+
+    const areaText=coords.length<3?"N/A (need at least 3 points)":`${area.toFixed(3)} m²`;
+
+    resultsDiv.innerHTML=`
+      <div>Computed area: <strong>${areaText}</strong></div>
+      <div>${areaCompareText}</div>
+      <div style="margin-top:2px;">${areaStatus}</div>
+      <div style="margin-top:6px;">Perimeter (sum of entered lot lines): <strong>${perimeter.toFixed(3)} m</strong></div>
+      <div>ΔE (closure): <strong>${dE_closure.toFixed(3)} m</strong></div>
+      <div>ΔN (closure): <strong>${dN_closure.toFixed(3)} m</strong></div>
+      <div>Closure distance: <strong>${closureDist.toFixed(4)} m</strong></div>
+      <div>Closure bearing (error): <strong>${closureBearingError}</strong></div>
+      <div>Relative precision: <strong>${precisionText}</strong></div>
+    `;
+
+    projInfoDiv.innerHTML=projText;
+
+    let findingsHtml="";
+    if(coords.length===2){
+      findingsHtml=`<p><strong>Findings:</strong> Only two points are defined; closure and area cannot be evaluated yet.</p>`;
+    }else if(coords.length>=3){
+      if(inputArea>0){
+        findingsHtml=`<p><strong>Findings:</strong> The traverse ${
+          closureDist<=closureTol?"closes within tolerance":"does <strong>not</strong> close (gap of "+closureDist.toFixed(3)+" m)"
+        } with a computed area of <strong>${area.toFixed(3)} m²</strong> versus TCT area of <strong>${inputArea.toFixed(3)} m²</strong>, giving a difference of <strong>${diffArea.toFixed(3)} m²</strong> (${pctDiff.toFixed(2)}%). ${areaStatusPlain||""}</p>`;
+      }else{
+        findingsHtml=`<p><strong>Findings:</strong> The traverse ${
+          closureDist<=closureTol?"closes within tolerance":"has a closure gap of "+closureDist.toFixed(3)+" m"
+        } with a computed area of <strong>${area.toFixed(3)} m²</strong>. No TCT/declared area was entered for comparison. Relative precision is <strong>${precisionText}</strong>.</p>`;
+      }
+    }
+    if(findingsDiv)findingsDiv.innerHTML=findingsHtml||"<em>Findings summary will appear here.</em>";
+
+    tctState={coords,segments,tieObj,area,perimeter,closureDist,closureBearingError,dE_closure,dN_closure,areaText,areaComparePlain,areaStatusPlain,precisionText};
+  }
+
+  function toggleClosingChoice(mode){
+    const missingCb=document.getElementById("useMissingLine");
+    const projectedCb=document.getElementById("useProjectedLine");
+    const tbody=document.getElementById("lines-body");
+    let closingRow=tbody.querySelector("tr[data-closing='1']");
+    if(!closingInfo||!closingInfo.dist||closingInfo.dist<1e-6){
+      if(missingCb)missingCb.checked=false;
+      if(projectedCb)projectedCb.checked=false;
+      alert("No valid closing line to apply. Check bearings / distances first.");
+      return;
+    }
+    if(mode==="missing"){
+      if(missingCb.checked){
+        if(projectedCb.checked)projectedCb.checked=false;
+        applyClosingLine();
+      }else{
+        if(closingRow){closingRow.remove();scheduleAutoCompute();}
+      }
+    }else if(mode==="projected"){
+      if(projectedCb.checked){
+        if(missingCb.checked)missingCb.checked=false;
+        applyClosingLine();
+      }else{
+        if(closingRow){closingRow.remove();scheduleAutoCompute();}
+      }
+    }
+  }
+
+  function applyClosingLine(){
+    const tbody=document.getElementById("lines-body");
+    if(!closingInfo||closingInfo.dist<1e-6)return;
+    const comps=bearingComponentsFromDelta(closingInfo.dN,closingInfo.dE);
+    if(!comps)return;
+    let closingRow=tbody.querySelector("tr[data-closing='1']");
+    const data={
+      lineNo:tbody.querySelectorAll("tr").length+(closingRow?0:1),
+      from:closingInfo.from,to:closingInfo.to,
+      ns:comps.ns,ew:comps.ew,deg:comps.deg,min:comps.min,sec:comps.sec,dist:closingInfo.dist
+    };
+    if(!closingRow){
+      closingRow=addLineRow(data);
+      closingRow.setAttribute("data-closing","1");
+    }else{
+      closingRow.querySelector(".line-no").value=data.lineNo;
+      closingRow.querySelector(".from-point").value=data.from;
+      closingRow.querySelector(".to-point").value=data.to;
+      closingRow.querySelector(".quad-ns").value=data.ns;
+      closingRow.querySelector(".quad-ew").value=data.ew;
+      closingRow.querySelector(".deg").value=data.deg;
+      closingRow.querySelector(".min").value=data.min;
+      closingRow.querySelector(".sec").value=data.sec;
+      closingRow.querySelector(".distance").value=data.dist.toFixed(3);
+      updateBearingControls(closingRow);
+    }
+    scheduleAutoCompute();
+  }
+
+  function saveAsPDF(){
+    try{
+      const {jsPDF}=window.jspdf||{};
+      if(!jsPDF||!window.html2canvas){
+        alert("Libraries not loaded (jsPDF / html2canvas). PDF export not available.");
+        return;
+      }
+      computeCoordinates();
+
+      const app=document.querySelector(".app");
+      if(!app){alert("Cannot find .app container for export.");return;}
+
+      const wrapper=document.createElement("div");
+      wrapper.style.position="fixed";
+      wrapper.style.left="-9999px";
+      wrapper.style.top="0";
+      wrapper.style.background=getComputedStyle(document.body).background||"#ffffff";
+
+      const clone=app.cloneNode(true);
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+
+      const origCanvases=app.querySelectorAll("canvas");
+      const cloneCanvases=clone.querySelectorAll("canvas");
+      cloneCanvases.forEach((cClone,idx)=>{
+        const cOrig=origCanvases[idx];
+        if(!cOrig)return;
+        cClone.width=cOrig.width;
+        cClone.height=cOrig.height;
+        const ctx=cClone.getContext("2d");
+        ctx.drawImage(cOrig,0,0);
+      });
+
+      const origFields=app.querySelectorAll("input, textarea, select");
+      const cloneFields=clone.querySelectorAll("input, textarea, select");
+      cloneFields.forEach((el,idx)=>{
+        const orig=origFields[idx];
+        if(!orig||!el.parentNode)return;
+        let text="";
+        if(orig.tagName==="SELECT"){
+          const opt=orig.options[orig.selectedIndex];
+          text=opt?opt.textContent:"";
+        }else if(orig.type==="checkbox"||orig.type==="radio"){
+          text=orig.checked?"✓":"";
+        }else{text=orig.value;}
+        const span=document.createElement("span");
+        span.textContent=text;
+        const cs=window.getComputedStyle(el);
+        span.style.display="inline-block";
+        span.style.minWidth=el.offsetWidth+"px";
+        span.style.minHeight=el.offsetHeight+"px";
+        span.style.padding=cs.padding||"2px 4px";
+        span.style.border=cs.borderWidth==="0px"?"1px solid #d0d4dd":cs.border;
+        span.style.fontSize=cs.fontSize;
+        span.style.fontFamily=cs.fontFamily;
+        span.style.lineHeight=cs.lineHeight;
+        span.style.backgroundColor="#ffffff";
+        el.parentNode.replaceChild(span,el);
+      });
+
+      const pdf=new jsPDF({orientation:"landscape",unit:"pt",format:"a3"});
+      const pageWidth=pdf.internal.pageSize.getWidth();
+      const pageHeight=pdf.internal.pageSize.getHeight();
+      const margin=20;
+
+      html2canvas(clone,{scale:2,useCORS:true}).then(canvas=>{
+        const imgData=canvas.toDataURL("image/png");
+        let imgWidth=pageWidth-2*margin;
+        let imgHeight=canvas.height*(imgWidth/canvas.width);
+        if(imgHeight>pageHeight-2*margin){
+          const scale=(pageHeight-2*margin)/imgHeight;
+          imgHeight*=scale;imgWidth*=scale;
+        }
+        const x=(pageWidth-imgWidth)/2;
+        const y=(pageHeight-imgHeight)/2;
+        pdf.addImage(imgData,"PNG",x,y,imgWidth,imgHeight);
+        pdf.save("TCT_Lot_Checker_Screen.pdf");
+        document.body.removeChild(wrapper);
+      }).catch(err=>{
+        console.error(err);
+        document.body.removeChild(wrapper);
+        alert("Error generating PDF. Please check console.");
+      });
+    }catch(e){
+      console.error(e);
+      alert("Error generating PDF. Please check console.");
+    }
+  }
+
+  window.onload=function(){
+    defaultLines.forEach(d=>addLineRow(d));
+    document.getElementById("inputArea").addEventListener("input",scheduleAutoCompute);
+    document.getElementById("useTieToCorner1").addEventListener("change",scheduleAutoCompute);
+    document.querySelectorAll(".tie-input").forEach(el=>{
+      el.addEventListener("input",scheduleAutoCompute);
+      el.addEventListener("change",scheduleAutoCompute);
+    });
+    document.getElementById("showMissingLine").addEventListener("change",scheduleAutoCompute);
+    document.getElementById("showLengthLabels").addEventListener("change",scheduleAutoCompute);
+    document.getElementById("showBearingLabels").addEventListener("change",scheduleAutoCompute);
+    document.getElementById("alignLabelsToLine").addEventListener("change",scheduleAutoCompute);
+    computeCoordinates();
+  };
+</script>
+
+</body>
+</html>
