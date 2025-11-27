@@ -11,8 +11,9 @@
   </script>
 
   <meta charset="UTF-8">
-  <title>TCTChecker by TooWiZe (VBangcaya)</title>
+  <title>TCTChecker by TooWiZe (vbangcaya)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
     :root {
       --bg-main: #eef1f6;
@@ -254,12 +255,58 @@
       text-align: center;
     }
 
+    /* For print-clone values (inputs converted to text) */
+    .print-value-box {
+      display: inline-block;
+      min-width: 20px;
+      padding: 1px 2px;
+      border: 1px solid var(--border-soft);
+      border-radius: 3px;
+      font-size: 10px;
+      background: #ffffff;
+      box-sizing: border-box;
+    }
+    .print-checkbox {
+      display: inline-block;
+      font-size: 10px;
+      margin-right: 3px;
+    }
+
     @media (max-width: 900px) {
       .left-panel {
         flex: 1 1 100%;
       }
       .right-panel {
         flex: 1 1 100%;
+      }
+    }
+
+    /* PRINT: for window.print() (phones/tablets) */
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      .btn {
+        display: none !important;
+      }
+
+      header {
+        padding: 4px 8px;
+      }
+
+      .app {
+        padding: 0 4px;
+      }
+
+      input[type="text"],
+      input[type="number"],
+      select {
+        font-size: 10px !important;
+        padding: 1px 2px !important;
+        line-height: 1.1 !important;
+        height: auto !important;
+        overflow: visible !important;
       }
     }
   </style>
@@ -271,7 +318,7 @@
 <body>
 
 <header>
-  <h1>TCT Lot Checker</h1>
+  <h1>TCTChecker by TooWiZe (vbangcaya)</h1>
   <p>Bearings &amp; distances → coordinates, area, closure &amp; plot</p>
 </header>
 
@@ -439,6 +486,9 @@
           </button>
           <button class="btn" type="button" onclick="saveAsPDF()">
             Save as PDF (same layout)
+          </button>
+          <button class="btn" type="button" onclick="saveAsImage()">
+            Save as Image (PNG)
           </button>
         </div>
 
@@ -762,7 +812,7 @@
     const frameWidth=canvas.width-2*paddingX;
     const frameHeight=canvas.height-2*paddingY;
 
-    // GRIDLINES (behind everything)
+    // GRIDLINES
     const gridSpacing=40;
     ctx.save();
     ctx.strokeStyle="#edf0f7";
@@ -784,7 +834,7 @@
     ctx.lineWidth=1;
     ctx.strokeRect(paddingX,paddingY,frameWidth,frameHeight);
 
-    // Center axes (X–Y) with N/E/S/W labels
+    // Center axes + N/E/S/W
     const canvasCenterX=paddingX+frameWidth/2;
     const canvasCenterY=paddingY+frameHeight/2;
     ctx.save();
@@ -792,29 +842,22 @@
     ctx.lineWidth=1.2;
     ctx.setLineDash([4,3]);
     ctx.beginPath();
-    // vertical (N–S)
     ctx.moveTo(canvasCenterX,paddingY);
     ctx.lineTo(canvasCenterX,canvas.height-paddingY);
-    // horizontal (W–E)
     ctx.moveTo(paddingX,canvasCenterY);
     ctx.lineTo(canvas.width-paddingX,canvasCenterY);
     ctx.stroke();
     ctx.setLineDash([]);
-
     ctx.font="11px Arial";
     ctx.fillStyle="#444";
     ctx.textAlign="center";
     ctx.textBaseline="bottom";
-    // N at top
     ctx.fillText("N",canvasCenterX,paddingY-4);
-    // S at bottom
     ctx.textBaseline="top";
     ctx.fillText("S",canvasCenterX,canvas.height-paddingY+4);
-    // E at right
     ctx.textBaseline="middle";
     ctx.textAlign="left";
     ctx.fillText("E",canvas.width-paddingX+4,canvasCenterY);
-    // W at left
     ctx.textAlign="right";
     ctx.fillText("W",paddingX-4,canvasCenterY);
     ctx.restore();
@@ -849,7 +892,7 @@
       return{x,y};
     }
 
-    // Lot boundary polyline
+    // Lot boundary
     ctx.strokeStyle="#1565c0";
     ctx.lineWidth=2;
     ctx.beginPath();
@@ -859,7 +902,7 @@
     }
     ctx.stroke();
 
-    // Fill polygon (green if closed)
+    // Fill polygon (green if closed within tolerance)
     let fillColor="rgba(21,101,192,0.07)";
     if(info&&typeof info.closureDist==="number"&&info.closureDist<=0.01){
       fillColor="rgba(76,175,80,0.18)";
@@ -931,7 +974,7 @@
       ctx.fillText(c.pt,p.x+5,p.y-3);
     });
 
-    // Line labels (transparent background)
+    // Labels
     ctx.font="10px Arial";
     for(let i=0;i<coords.length-1;i++){
       const ci=coords[i],cj=coords[i+1];
@@ -981,9 +1024,15 @@
     const coords=[];const segments=[];
     let perimeter=0;let hasMissingLine=false;
     closingInfo=null;
-    let startE=0,startN=0;
     const startName="1";
+    const startE=0,startN=0;
     coords.push({pt:startName,e:startE,n:startN});
+
+    const resultsDiv=document.getElementById("results");
+    const lineCheckBody=document.getElementById("line-check-body");
+    const projInfoDiv=document.getElementById("projInfo");
+    const findingsDiv=document.getElementById("findings");
+    lineCheckBody.innerHTML="";
 
     rows.forEach(row=>{
       const distVal=row.querySelector(".distance").value;
@@ -1032,12 +1081,6 @@
       const toIndex=coords.length-1;
       segments.push({lineNo,fromName,toName,ns:nsRaw,ew:ewRaw,deg,min,sec,dist,fromIndex,toIndex});
     });
-
-    const resultsDiv=document.getElementById("results");
-    const lineCheckBody=document.getElementById("line-check-body");
-    const projInfoDiv=document.getElementById("projInfo");
-    const findingsDiv=document.getElementById("findings");
-    lineCheckBody.innerHTML="";
 
     const mlText=document.getElementById("missingLineBearingText");
     const plText=document.getElementById("projectedLineBearingText");
@@ -1307,150 +1350,262 @@
     scheduleAutoCompute();
   }
 
-  // 🔹 Helper: detect mobile / iOS
-  function isMobileDevice() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  // Turn inputs/selects/checkboxes into plain text boxes in a cloned node
+  function prepareCloneForPdf(root){
+    // text & number inputs
+    const textInputs=root.querySelectorAll('input[type="text"], input[type="number"]');
+    textInputs.forEach(inp=>{
+      const span=document.createElement("span");
+      span.className="print-value-box";
+      span.textContent=inp.value || "";
+      inp.parentNode.replaceChild(span,inp);
+    });
+
+    // selects
+    const selects=root.querySelectorAll("select");
+    selects.forEach(sel=>{
+      const span=document.createElement("span");
+      span.className="print-value-box";
+      const opt=sel.options[sel.selectedIndex];
+      span.textContent=opt?opt.text:"";
+      sel.parentNode.replaceChild(span,sel);
+    });
+
+    // checkboxes
+    const checkboxes=root.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb=>{
+      const span=document.createElement("span");
+      span.className="print-checkbox";
+      span.textContent=cb.checked?"☑":"☐";
+      cb.parentNode.insertBefore(span,cb);
+      cb.parentNode.removeChild(cb);
+    });
   }
 
-  function isIOS() {
-    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  // Build a hidden, print-friendly clone of the layout for export
+  function buildExportClone(){
+    return new Promise(resolve=>{
+      const app=document.querySelector(".app");
+      if(!app){resolve(null);return;}
+
+      const cloneContainer=document.createElement("div");
+      cloneContainer.style.position="fixed";
+      cloneContainer.style.left="0";
+      cloneContainer.style.top="0";
+      cloneContainer.style.width=app.offsetWidth+"px";
+      cloneContainer.style.background="#ffffff";
+      cloneContainer.style.zIndex="-9999";
+
+      const clone=app.cloneNode(true);
+
+      const finalize=()=>{
+        cloneContainer.appendChild(clone);
+        document.body.appendChild(cloneContainer);
+        prepareCloneForPdf(clone);
+        const cleanup=()=>{
+          if(cloneContainer.parentNode){
+            cloneContainer.parentNode.removeChild(cloneContainer);
+          }
+        };
+        resolve({root:cloneContainer,cleanup});
+      };
+
+      // Copy current plot into export clone (canvas loses drawing when cloned)
+      const liveCanvas=document.getElementById("lotCanvas");
+      const cloneCanvas=clone.querySelector("#lotCanvas");
+      if(liveCanvas&&cloneCanvas){
+        try{
+          const dataUrl=liveCanvas.toDataURL("image/png");
+          const img=document.createElement("img");
+          img.src=dataUrl;
+          img.width=liveCanvas.width;
+          img.height=liveCanvas.height;
+          img.style.width="100%";
+          img.style.height="auto";
+          img.style.display="block";
+          img.style.border=cloneCanvas.style.border;
+          img.style.borderRadius=cloneCanvas.style.borderRadius;
+          cloneCanvas.replaceWith(img);
+          if(img.complete){
+            finalize();
+          }else{
+            img.onload=finalize;
+            img.onerror=finalize;
+          }
+        }catch(err){
+          console.warn("Could not copy canvas for export",err);
+          finalize();
+        }
+      }else{
+        finalize();
+      }
+    });
   }
 
-  // 🔹 Helper: mobile-safe PDF download
-  function triggerPdfDownload(pdf) {
-    const fileName = "TCTChecker_LotPlot.pdf";
+  // Save as PDF
+  async function saveAsPDF(){
+    computeCoordinates();
 
-    // Desktop: normal save
-    if (!isMobileDevice()) {
-      pdf.save(fileName);
-      return;
-    }
-
-    // Mobile: blob + viewer / download
-    const blob = pdf.output("blob");
-    const url = URL.createObjectURL(blob);
-
-    if (isIOS()) {
-      // iOS: open in new tab so user can "Share" → "Save to Files / Books"
-      window.open(url, "_blank");
-    } else {
-      // Android: trigger download
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-  }
-
-  function saveAsPDF(){
     try{
       const {jsPDF}=window.jspdf||{};
       if(!jsPDF||!window.html2canvas){
         alert("Libraries not loaded (jsPDF / html2canvas). PDF export not available.");
         return;
       }
-      computeCoordinates();
 
-      const app=document.querySelector(".app");
-      if(!app){alert("Cannot find .app container for export.");return;}
+      const cloneForExport=await buildExportClone();
+      if(!cloneForExport||!cloneForExport.root){
+        alert("Cannot find layout container for export.");
+        return;
+      }
 
-      const wrapper=document.createElement("div");
-      wrapper.style.position="fixed";
-      wrapper.style.left="-9999px";
-      wrapper.style.top="0";
-      wrapper.style.background=getComputedStyle(document.body).background||"#ffffff";
-
-      const clone=app.cloneNode(true);
-      wrapper.appendChild(clone);
-      document.body.appendChild(wrapper);
-
-      const origCanvases=app.querySelectorAll("canvas");
-      const cloneCanvases=clone.querySelectorAll("canvas");
-      cloneCanvases.forEach((cClone,idx)=>{
-        const cOrig=origCanvases[idx];
-        if(!cOrig)return;
-        cClone.width=cOrig.width;
-        cClone.height=cOrig.height;
-        const ctx=cClone.getContext("2d");
-        ctx.drawImage(cOrig,0,0);
-      });
-
-      const origFields=app.querySelectorAll("input, textarea, select");
-      const cloneFields=clone.querySelectorAll("input, textarea, select");
-      cloneFields.forEach((el,idx)=>{
-        const orig=origFields[idx];
-        if(!orig||!el.parentNode)return;
-        let text="";
-        if(orig.tagName==="SELECT"){
-          const opt=orig.options[orig.selectedIndex];
-          text=opt?opt.textContent:"";
-        }else if(orig.type==="checkbox"||orig.type==="radio"){
-          text=orig.checked?"✓":"";
-        }else{text=orig.value;}
-        const span=document.createElement("span");
-        span.textContent=text;
-        const cs=window.getComputedStyle(el);
-        span.style.display="inline-block";
-        span.style.minWidth=el.offsetWidth+"px";
-        span.style.minHeight=el.offsetHeight+"px";
-        span.style.padding=cs.padding||"2px 4px";
-        span.style.border=cs.borderWidth==="0px"?"1px solid #d0d4dd":cs.border;
-        span.style.fontSize=cs.fontSize;
-        span.style.fontFamily=cs.fontFamily;
-        span.style.lineHeight=cs.lineHeight;
-        span.style.backgroundColor="#ffffff";
-        // 🔹 allow wrapping inside box for long values
-        span.style.whiteSpace = "normal";
-        span.style.overflowWrap = "break-word";
-        span.style.boxSizing = "border-box";
-
-        el.parentNode.replaceChild(span,el);
-      });
-
+      const {root,cleanup}=cloneForExport;
       const pdf=new jsPDF({orientation:"landscape",unit:"pt",format:"a3"});
       const pageWidth=pdf.internal.pageSize.getWidth();
       const pageHeight=pdf.internal.pageSize.getHeight();
       const margin=20;
 
-      // 🔹 Lighter render for mobile to avoid memory errors
-      const scale = isMobileDevice() ? 1 : 2;
-
-      html2canvas(clone,{
-        scale: scale,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        scrollX: 0,
-        scrollY: 0
-      }).then(canvas=>{
+      html2canvas(root,{scale:2,useCORS:true}).then(canvas=>{
         const imgData=canvas.toDataURL("image/png");
         let imgWidth=pageWidth-2*margin;
         let imgHeight=canvas.height*(imgWidth/canvas.width);
         if(imgHeight>pageHeight-2*margin){
-          const s=(pageHeight-2*margin)/imgHeight;
-          imgHeight*=s;imgWidth*=s;
+          const scale=(pageHeight-2*margin)/imgHeight;
+          imgHeight*=scale;imgWidth*=scale;
         }
         const x=(pageWidth-imgWidth)/2;
         const y=(pageHeight-imgHeight)/2;
         pdf.addImage(imgData,"PNG",x,y,imgWidth,imgHeight);
 
-        // ✅ cross-platform download / open
-        triggerPdfDownload(pdf);
+        const isMobile=/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const fileName="TCTChecker_LotPlot.pdf";
 
-        document.body.removeChild(wrapper);
+        if(isMobile){
+          const pdfBlob=pdf.output("blob");
+          const blobUrl=URL.createObjectURL(pdfBlob);
+          const fallbackOpen=()=>{
+            const newTab=window.open(blobUrl,"_blank");
+            if(!newTab){
+              alert("Popup was blocked. Please allow popups to view the PDF.");
+            }
+            setTimeout(()=>URL.revokeObjectURL(blobUrl),15000);
+          };
+
+          const canShareFiles=(()=>{
+            try{
+              const file=new File([pdfBlob],fileName,{type:"application/pdf"});
+              return !!(navigator.canShare&&navigator.canShare({files:[file]}));
+            }catch(err){
+              return false;
+            }
+          })();
+
+          if(navigator.share&&canShareFiles){
+            const file=new File([pdfBlob],fileName,{type:"application/pdf"});
+            navigator.share({
+              files:[file],
+              title:"TCT Checker PDF",
+              text:"Lot plot PDF generated by TCTChecker."
+            }).catch(()=>{
+              fallbackOpen();
+            }).finally(()=>{
+              cleanup();
+              URL.revokeObjectURL(blobUrl);
+            });
+          }else{
+            fallbackOpen();
+            cleanup();
+          }
+          return;
+        }
+
+        pdf.save(fileName);
+        cleanup();
       }).catch(err=>{
         console.error(err);
-        document.body.removeChild(wrapper);
-        alert("Error generating PDF. Please check console or try again.");
+        cleanup();
+        alert("Error generating PDF.");
       });
     }catch(e){
       console.error(e);
-      alert("Error generating PDF. Please check console.");
+      alert("Error generating PDF.");
     }
+  }
+
+  // Save as image (PNG)
+  async function saveAsImage(){
+    computeCoordinates();
+
+    if(!window.html2canvas){
+      alert("Library not loaded (html2canvas). Image export not available.");
+      return;
+    }
+
+    const cloneForExport=await buildExportClone();
+    if(!cloneForExport||!cloneForExport.root){
+      alert("Cannot find layout container for export.");
+      return;
+    }
+
+    const {root,cleanup}=cloneForExport;
+    html2canvas(root,{scale:2,useCORS:true}).then(canvas=>{
+      const fileName="TCTChecker_LotPlot.png";
+      const dataUrl=canvas.toDataURL("image/png");
+      const isMobile=/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      const openDataUrl=()=>{
+        const newTab=window.open(dataUrl,"_blank");
+        if(!newTab){
+          alert("Popup was blocked. Allow popups or long-press the image to save.");
+        }
+      };
+
+      if(isMobile&&navigator.share){
+        canvas.toBlob(blob=>{
+          if(!blob){
+            openDataUrl();
+            cleanup();
+            return;
+          }
+          const file=new File([blob],fileName,{type:"image/png"});
+          let canShareFiles=false;
+          try{
+            canShareFiles=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+          }catch(err){
+            canShareFiles=false;
+          }
+          if(canShareFiles){
+            navigator.share({
+              files:[file],
+              title:"TCT Checker Plot Image",
+              text:"Lot plot image generated by TCTChecker."
+            }).catch(()=>{
+              openDataUrl();
+            }).finally(()=>{
+              cleanup();
+            });
+          }else{
+            openDataUrl();
+            cleanup();
+          }
+        },"image/png");
+      }else if(isMobile){
+        openDataUrl();
+        cleanup();
+      }else{
+        const link=document.createElement("a");
+        link.href=dataUrl;
+        link.download=fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        cleanup();
+      }
+    }).catch(err=>{
+      console.error(err);
+      cleanup();
+      alert("Error generating image.");
+    });
   }
 
   window.onload=function(){
