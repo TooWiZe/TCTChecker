@@ -4,15 +4,14 @@
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-07EXKY7XTT"></script>
   <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-07EXKY7XTT');
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-07EXKY7XTT');
   </script>
-  
+
   <meta charset="UTF-8">
-  <title>TCT Lot Checker (4 pts + Findings)</title>
+  <title>TCTChecker by TooWiZe (VBangcaya)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     :root {
@@ -1308,6 +1307,35 @@
     scheduleAutoCompute();
   }
 
+  // Helper: more reliable download on mobile (iOS / Android)
+  function triggerPdfDownload(pdf){
+    const fileName = "TCTChecker_LotPlot.pdf";
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    try {
+      if (!isMobile) {
+        // Desktop browsers – jsPDF built-in save
+        pdf.save(fileName);
+        return;
+      }
+    } catch (e) {
+      console.warn("pdf.save failed, using blob fallback", e);
+    }
+
+    // Mobile or fallback: create a blob link (opens viewer or save/share dialog)
+    const blob = pdf.output("blob");
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(function () {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 4000);
+  }
+
   function saveAsPDF(){
     try{
       const {jsPDF}=window.jspdf||{};
@@ -1384,7 +1412,10 @@
         const x=(pageWidth-imgWidth)/2;
         const y=(pageHeight-imgHeight)/2;
         pdf.addImage(imgData,"PNG",x,y,imgWidth,imgHeight);
-        pdf.save("TCT_Lot_Checker_Screen.pdf");
+
+        // Use helper for cross-platform download
+        triggerPdfDownload(pdf);
+
         document.body.removeChild(wrapper);
       }).catch(err=>{
         console.error(err);
@@ -1415,4 +1446,3 @@
 
 </body>
 </html>
-
